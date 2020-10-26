@@ -30,13 +30,13 @@ namespace OutlookCount
         static Outlook._Application oApp = null;
         static int totalSentMails = 0;
         static int totalReceivedMails = 0;
-        static string restrictYesterday = null;
-        static readonly List<CountAgent> CountAgents = new List<CountAgent> {};
+        static string restrictDate = null;
+        static readonly List<CountAgent> CountAgents = new List<CountAgent> { };
 
         static int Main(string[] args)
         {
             // Test if input arguments were supplied.
-            if (args.Length != 4)
+            if ((args.Length != 4) || (args.Length != 6))
             {
                 ErrorParameters();
                 return 1;
@@ -56,6 +56,15 @@ namespace OutlookCount
                 return returnValue;
             }
 
+            if (args.Length == 6)
+            {
+                returnValue = ReadTwoArguments(args.Skip(4).Take(2).ToArray());
+                if (returnValue != 0)
+                {
+                    return returnValue;
+                }
+            }
+
             // Start outlook
             try
             {
@@ -69,8 +78,8 @@ namespace OutlookCount
                 return 7;
             }
 
-            // Set daterange to count
-            DateRange();
+            // Set daterange to count if not given by parameters
+            if (restrictDate == null) DateRange();
 
             //Count mail
             CountMailbox();
@@ -87,13 +96,14 @@ namespace OutlookCount
         /// DateRange defines the range in time to search
         /// 
         /// </summary>
-        private static void DateRange()
+        private static void DateRange(DateTime? givenDate = null)
         {
             // get the begin and end of yesterday
-            DateTime dtYesterday = DateTime.Now.AddDays(-1);
-            DateTime dtEnd = new DateTime(dtYesterday.Year, dtYesterday.Month, dtYesterday.Day, 23, 59, 59, 999);
-            DateTime dtStart = new DateTime(dtYesterday.Year, dtYesterday.Month, dtYesterday.Day, 0, 0, 0, 0);
-            restrictYesterday = " [received] >= \"" + dtStart.ToString("g") + "\" AND [received] <= \"" + dtEnd.ToString("g") + "\"";
+
+            DateTime dtRestrict = givenDate == null ? DateTime.Now.AddDays(-1) : (DateTime)givenDate;
+            DateTime dtEnd = new DateTime(dtRestrict.Year, dtRestrict.Month, dtRestrict.Day, 23, 59, 59, 999);
+            DateTime dtStart = new DateTime(dtRestrict.Year, dtRestrict.Month, dtRestrict.Day, 0, 0, 0, 0);
+            restrictDate = " [received] >= \"" + dtStart.ToString("g") + "\" AND [received] <= \"" + dtEnd.ToString("g") + "\"";
         }
 
         /// <summary>
@@ -104,8 +114,8 @@ namespace OutlookCount
         /// </summary>
         static void ErrorParameters()
         {
-            Console.WriteLine("Please enter all arguments.");
-            Console.WriteLine("Usage: outlookcount -e <mailbox name> -c <csv-file containing agent codes>");
+            Console.WriteLine("Please enter all obligatory arguments.");
+            Console.WriteLine("Usage: outlookcount -e <mailbox name> -c <csv-file containing agent codes> [-d <date>]");
         }
 
         /// <summary>
@@ -116,6 +126,7 @@ namespace OutlookCount
         /// <list>
         ///     <item>0:  Succesfull </item>
         ///     <item>1:  Wrong code in parameter</item>
+        ///     <item>5:  Wrong date format</item>
         ///     <item>6:  Error reading codes from file</item>
         ///     <item>7:  Wrong filename</item>
         /// </list>
@@ -133,7 +144,7 @@ namespace OutlookCount
             {
                 // read the agent codes from file
                 int returnvalue = ReadCodes(args[1]);
-                if ( 0 != returnvalue)
+                if (0 != returnvalue)
                 {
                     return returnvalue;
                 }
@@ -143,6 +154,24 @@ namespace OutlookCount
                     return 6;
                 }
             } // wrong Arguments, write error message and quit
+            else if (args[0] == "-d")
+            {
+
+                DateTime givenDate;
+                // Read the date
+                try
+                {
+                    givenDate = DateTime.Parse(args[1]);
+                }
+                catch (FormatException e)
+                {
+                    Console.WriteLine("Wrong date format");
+                    Console.WriteLine(e.Message);
+                    return 5;
+                }
+
+                DateRange(givenDate);
+            }
             else
             {
                 ErrorParameters();
@@ -214,15 +243,15 @@ namespace OutlookCount
 
             // Run over all mailboxes
             foreach (Folder folder in NS.Folders)
-            if (folder.Name == mailBox)
+                if (folder.Name == mailBox)
                 {
                     try
                     {
                         // Sent mails
-                        sentMailsCount(restrictYesterday, folder);
+                        sentMailsCount(restrictDate, folder);
 
                         // Received mails
-                        ReceivedMailsCount(restrictYesterday, folder);
+                        ReceivedMailsCount(restrictDate, folder);
 
                     }
                     //catch faulty stores
@@ -242,7 +271,7 @@ namespace OutlookCount
 
                 Items yItems = sentFolder.Items.Restrict(restrictYesterday);
                 totalSentMails = yItems.Count;
-                
+
                 foreach (Object yItem in yItems)
                     if (yItem is MailItem item)
                     {
@@ -271,7 +300,7 @@ namespace OutlookCount
                 MAPIFolder receiveFolder = folder.Folders["Boîte de réception"];
 
                 foreach (Folder subfolder in receiveFolder.Folders)
-                { 
+                {
                     zItems = subfolder.Items.Restrict(restrictYesterday);
                     totalReceivedMails += zItems.Count;
                 }
