@@ -331,11 +331,13 @@ namespace OutlookCount
             // update the found agent
             if (Position >= 0)
             {
+                // Find the agent in the list (with delegate as function to search in list)
                 CountAgent result = CountAgents.Find(
                     delegate (CountAgent agent)
                     {
                         return agent.AgentCode == Name;
                     });
+                // Add 1 to counter of agent
                 result.Amount++;
             }
         }
