@@ -229,7 +229,7 @@
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.ListView listView1;
         private System.Windows.Forms.Button OKButton;
-        private System.Windows.Forms.Button CancelButton;
+        private new System.Windows.Forms.Button CancelButton;
         private System.Windows.Forms.Button SearchButton;
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.TextBox FileNameBox;
