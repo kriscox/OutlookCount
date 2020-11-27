@@ -57,7 +57,7 @@ namespace OutlookCount
         public void SetDateRange(DateTime dtStart, DateTime dtEnd)
         {
             // get the begin and end of yesterday
-            restrictDate = " [received] >= \"" + dtStart.Date.ToString("g") + "\" AND [received] <= \"" + (dtEnd.Date + new TimeSpan(23, 59, 59)).ToString("g") + "\"";
+            restrictDate = " [receivedTime] >= \"" + dtStart.Date.ToString("g") + "\" AND [receivedTime] <= \"" + (dtEnd.Date + new TimeSpan(23, 59, 59)).ToString("g") + "\"";
         }
 
         /// <summary>
